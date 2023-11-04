@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test de Personalidad</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+
+  <h1>Test de Personalidad</h1>
+
+  <div id="fb-root"></div>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v10.0" nonce="IeUO2yIe"></script>
+
+  <div class="fb-login-button" data-width="" data-size="large" data-button-type="continue_with" data-layout="default" data-auto-logout-link="false" data-use-continue-as="false"></div>
+
+  <form id="quizForm">
+    <!-- Questions will be generated here -->
+  </form>
+
+  <button id="submitBtn">Submit</button>
+
+  <script>
+    const quizQuestions = [
+      { question: 'Tengo una imaginación vívida.', trait: 'openness', reverse: false },
+      { question: 'No me interesan las ideas abstractas.', trait: 'openness', reverse: true },
+      { question: 'Siempre estoy preparado.', trait: 'conscientiousness', reverse: false },
+      { question: 'Dejo mis pertenencias por ahí.', trait: 'conscientiousness', reverse: true },
+      { question: 'Soy el alma de la fiesta.', trait: 'extraversion', reverse: false },
+      { question: 'No hablo mucho.', trait: 'extraversion', reverse: true },
+      { question: 'Siento poca preocupación por los demás.', trait: 'agreeableness', reverse: true },
+      { question: 'Me intereso por las personas.', trait: 'agreeableness', reverse: false },
+      { question: 'Me estreso fácilmente.', trait: 'neuroticism', reverse: false },
+      { question: 'Estoy relajado la mayor parte del tiempo.', trait: 'neuroticism', reverse: true }
+    ];
+
+    const generateQuiz = () => {
+      const form = document.getElementById('quizForm');
+      quizQuestions.forEach((q, index) => {
+        const questionElement = document.createElement('div');
+        questionElement.innerHTML = `<p>${index + 1}. ${q.question}</p>` +
+          '<label><input type="radio" name="q' + index + '" value="5"> Totalmente de acuerdo</label>' +
+          '<label><input type="radio" name="q' + index + '" value="4"> De acuerdo</label>' +
+          '<label><input type="radio" name="q' + index + '" value="3"> Neutral</label>' +
+          '<label><input type="radio" name="q' + index + '" value="2"> En desacuerdo</label>' +
+          '<label><input type="radio" name="q' + index + '" value="1"> Totalmente en desacuerdo</label>';
+        form.appendChild(questionElement);
+      });
+    };
+
+    const handleSubmit = () => {
+      const formData = new FormData(document.getElementById('quizForm'));
+      const scores = {};
+      let allAnswered = true;
+
+      quizQuestions.forEach((question, index) => {
+        if (!formData.has('q' + index)) {
+          allAnswered = false;
+        }
+      });
+
+      if (!allAnswered) {
+        alert('Por favor responde todas las preguntas antes de enviar.');
+        return;
+      }      
+      
+      for (const [key, value] of formData.entries()) {
+        const index = parseInt(key.replace('q', ''));
+        const trait = quizQuestions[index].trait;
+        const reverse = quizQuestions[index].reverse;
+        const score = reverse ? 6 - parseInt(value) : parseInt(value);
+        scores[trait] = (scores[trait] || 0) + score;
+      }
+
+      fetch('http://localhost:5000/submit_quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(scores)
+      })
+      .then(response => response.json())
+      .then(data => console.log(data))
+      .catch((error) => console.error('Error:', error));
+    };
+
+    document.getElementById('submitBtn').addEventListener('click', function(event) {
+      event.preventDefault();
+      handleSubmit();
+    });
+
+    generateQuiz();
+  </script>
+
+</body>
+</html>
